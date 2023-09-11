@@ -1,28 +1,43 @@
 <template>
   <div id="app">
-    <img alt="Vue logo" src="./assets/logo.png">
-    <HelloWorld msg="Welcome to Your Vue.js App"/>
+    <router-view />
   </div>
 </template>
 
 <script>
-import HelloWorld from './components/HelloWorld.vue'
-
+import VueRouter from 'vue-router';
+import router from './router'  //引入路由配置文件
 export default {
-  name: 'App',
-  components: {
-    HelloWorld
+  router,
+  methods:{
+    showDoctorMain(){
+      this.$router.replace({
+        name:'doctorMain'
+      })
+    },
+    showPatientMain(){
+      this.$router.replace({
+        name:'patientMain'
+      })
+    },
+    logout(){
+      this.$router.replace({
+        name:'login'
+      })
+    },
+ 
+  },
+  mounted() {
+    this.$bus.$on('showDoctorMain', this.showDoctorMain)
+    this.$bus.$on('showPatientMain', this.showPatientMain)
+    this.$bus.$on('logout', this.logout)
+  },
+  beforeDestroy() {
+    this.$bus.$off('showDoctorMain', this.showDoctorMain)
+    this.$bus.$off('showPatientMain', this.showPatientMain)
+    this.$bus.$off('logout', this.logout)
   }
 }
 </script>
 
-<style>
-#app {
-  font-family: Avenir, Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  text-align: center;
-  color: #2c3e50;
-  margin-top: 60px;
-}
-</style>
+<style></style>

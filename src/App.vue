@@ -9,23 +9,23 @@ import VueRouter from 'vue-router';
 import router from './router'  //引入路由配置文件
 export default {
   router,
-  methods:{
-    showDoctorMain(){
+  methods: {
+    showDoctorMain() {
       this.$router.replace({
-        name:'doctorMain'
+        name: 'doctorMain'
       })
     },
-    showPatientMain(){
+    showPatientMain() {
       this.$router.replace({
-        name:'patientMain'
+        name: 'patientMain'
       })
     },
-    logout(){
+    logout() {
       this.$router.replace({
-        name:'login'
+        name: 'login'
       })
     },
- 
+
   },
   mounted() {
     this.$bus.$on('showDoctorMain', this.showDoctorMain)
@@ -40,4 +40,8 @@ export default {
 }
 </script>
 
-<style></style>
+<style>
+body {
+  background-color: #F7F8FD;
+}
+</style>

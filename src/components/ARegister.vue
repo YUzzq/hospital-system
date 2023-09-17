@@ -1,20 +1,21 @@
 <template>
   <div class="outBox">
     <div class="registerTittle">{{ registerTittle }}</div>
-    <div class="aboutAuthCode" v-if="page == 'aboutAuthCode'">
-      <el-input @focus="isRightMail = ''" @blur="checkMail" v-model.lazy="mail" :class="isRightMail" placeholder="邮箱"
+    <div class="aboutAuthCode">
+      <el-input @focus="isRightMail = ''" @blur="checkMail" v-model="mail" :class="isRightMail" placeholder="邮箱"
         type="text" class="mailInput"></el-input>
       <div class="authCodeBox">
-        <el-input v-model.number="authCode" placeholder="验证码" type="text" class="authCodeInput"></el-input>
+        <el-input v-model="authCode" placeholder="验证码" type="text" class="authCodeInput"></el-input>
         <el-button @click="sendAuthCode" class="sendBtn" plain type="primary" :disabled="isSendAgain"
           :style="{ width: 115 + 'px' }">{{
             cdWord
           }}</el-button>
       </div>
-      <el-button round @click="checkAuthCode" class="submitBtn" type="primary" plain>提交</el-button>
     </div>
-    <div class="editInfo" v-if="page == 'editInfo'">
+    <div class="editInfo">
       <el-input v-model.trim="info.userName" placeholder="用户名(用于登录)" type="text" class="infoInput"></el-input>
+      <el-input v-model.trim="info.password" placeholder="密码" type="password" class="infoInput"></el-input>
+      <el-input v-model.trim="confirmPassword" placeholder="确认密码" type="password" class="infoInput"></el-input>
       <el-input v-model.trim="info.name" placeholder="姓名" type="text" class="infoInput"></el-input>
       <el-input v-model.number="info.age" placeholder="年龄" type="text" class="infoInput"></el-input>
       <el-select v-model="info.gender" placeholder="性别" type="select" class="infoInput">
@@ -23,18 +24,18 @@
       </el-select>
       <el-button round @click="registerDone" class="submitBtn" type="primary" plain>注册</el-button>
     </div>
-    <el-link v-if="registerType=='patient'" @click="showLogin">返回</el-link>
-    <el-link v-if="registerType=='doctor'" @click="cancelRegister">取消</el-link>
+    <el-link v-if="registerType == 'patient'" @click="showLogin">返回</el-link>
+    <el-link v-if="registerType == 'doctor'" @click="cancelRegister">取消</el-link>
   </div>
 </template>
 
 <script>
 
+import http from '@/utils/request'
 export default {
   data() {
     return {
       //通过page来控制显示的组件
-      page: 'aboutAuthCode',
       mail: '',
       authCode: '',
       isRightMail: '',
@@ -42,13 +43,12 @@ export default {
       isSendAgain: false,
       isFirstSend: true,
       timer: null,
+      confirmPassword: '',
       info: {
         userName: '',
         name: '',
         age: '',
         gender: '',
-        section: '',
-        specialLine: ''
       }
     }
   },
@@ -79,8 +79,15 @@ export default {
     sendAuthCode() {
       this.isSendAgain = true
       this.isFirstSend = false
-      console.log('发送验证码')
       this.cd = 10
+      //发送验证码请求
+      http({
+        url: '/verify',
+        method: 'get',
+        params: {
+          emailAddress: this.mail
+        }
+      })
       clearInterval(this.timer)
       this.timer = setInterval(() => {
         this.cd--
@@ -90,25 +97,90 @@ export default {
         }
       }, 1000)
     },
-    //提交并验证验证码
-    checkAuthCode() {
-      console.log('验证成功，进一步提交信息');
-      this.page = 'editInfo'
-    },
     //完成注册并跳转到登录页面
     registerDone() {
-      console.log('注册完成');
-      this.showLogin()
+      //判断所有信息是否填写完整
+      if (this.mail == '') {
+        this.$message.error('请填写邮箱')
+        return
+      } else if (this.authCode == '') {
+        this.$message.error('请填写验证码')
+        return
+      }
+      for (let key in this.info) {
+        if (this.info[key] == '') {
+          this.$message.error('请填写完整信息')
+          return
+        }
+      }
+      if (this.info.password != this.confirmPassword) {
+        this.$message.error('两次输入的密码不一致')
+        return
+      }
+      if (this.registerType == 'patient') {
+        //发送注册患者请求
+        http({
+          url: '/patient/register',
+          method: 'post',
+          data: {
+            emailAddress: this.mail,
+            verify: this.authCode,
+            gender: this.info.gender,
+            age: this.info.age,
+            name: this.info.name,
+            userName: this.info.userName,
+            password: this.info.password
+          }
+        })
+          .then(res => {
+            if (res.data.code != 200) {
+              this.$message.error(res.data.message)
+              return
+            }
+            this.$message.success('注册成功,两秒后跳转到登录页面')
+            setTimeout(() => {
+              this.showLogin()
+            }, 2000)
+          })
+      } else if (this.registerType == 'doctor') {
+        //发送注册医生请求
+        http({
+          url: '/doctor/registerOther',
+          method: 'post',
+          data: {
+            emailAddress: this.mail,
+            verify: this.authCode,
+            gender: this.info.gender,
+            age: this.info.age,
+            name: this.info.name,
+            userName: this.info.userName,
+            password: this.info.password
+          }
+        })
+          .then(res => {
+            if (res.data.code != 200) {
+              this.$message.error(res.data.message)
+              return
+            }
+            this.$message.success('注册成功,两秒后跳转到登录页面')
+            setTimeout(() => {
+              this.logout()
+            }, 2000)
+          })
+      }
     },
     //返回到登录页面
     showLogin() {
       this.$bus.$emit('showLogin')
     },
+    logout() {
+      this.$bus.$emit('logout')
+    },
     //检查邮箱格式
     checkMail() {
       //判断邮箱格式是否正确
       let reg = /^([a-zA-Z0-9_-])+@([a-zA-Z0-9_-])+(.[a-zA-Z0-9_-])+/
-      if (!reg.test(this.mail)&&this.mail!='') {
+      if (!reg.test(this.mail) && this.mail != '') {
         this.isRightMail = 'notRightMail'
       } else {
         this.isRightMail = ''
@@ -133,7 +205,8 @@ export default {
 .notRightMail {
   outline: 1px solid #f00;
   border-radius: 5px;
-  &::after{
+
+  &::after {
     content: '邮箱格式不正确';
     position: absolute;
     background-color: #fff;
@@ -149,7 +222,7 @@ export default {
   background-color: #fff;
   border-radius: 10px;
   border: 1px solid #ccc;
-  width: 300px;
+  width: 400px;
   height: auto;
   margin: 0 auto;
   padding: 20px;
@@ -165,18 +238,18 @@ export default {
   .mailInput,
   .submitBtn {
     display: block;
-    width: 240px;
+    width: 300px;
     margin: 15px auto;
   }
 
   .authCodeBox {
     display: flex;
     justify-content: space-between;
-    width: 240px;
+    width: 300px;
     margin: 15px auto;
 
     .authCodeInput {
-      width: 120px;
+      width: 150px;
 
       .sendBtn {
         width: 115px;
@@ -189,25 +262,26 @@ export default {
     flex-wrap: wrap;
     justify-content: space-between;
     margin: 0 auto;
-    width: 240px;
+    width: 300px;
 
     .infoInput {
-      width: 240px;
+      width: 300px;
+      margin: 5px 0;
 
-      &:nth-child(2),
-      &:nth-child(3) {
-        width: 110px;
-        margin: 15px 0;
+      &:nth-child(4),
+      &:nth-child(5) {
+        width: 140px;
       }
 
-      &:nth-child(-n+4):before {
-        position: absolute;
-        font-size: 16px;
-        left: -10px;
-        content: '*';
-        color: #f00;
-      }
+      // &:nth-child(n):before {
+      //   position: absolute;
+      //   font-size: 16px;
+      //   left: -10px;
+      //   content: '*';
+      //   color: #f00;
+      // }
     }
 
   }
-}</style>
+}
+</style>

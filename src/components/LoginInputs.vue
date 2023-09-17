@@ -11,6 +11,7 @@
 
 <script>
 import router from '@/router'
+import http from '@/utils/request'
 export default {
     data() {
         return {
@@ -39,18 +40,61 @@ export default {
             this.$bus.$emit('showRegister')
         },
         login() {
+            if (this.userName == '' || this.password == '') {
+                this.$message.error('用户名或密码不能为空')
+                return
+            }
             this.isLoading = 'loading'
             if (this.type == 'patient') {
-                //模拟发送请求时的loading动画
-                setTimeout(() => {
-                    this.isLoading = ''
-                    this.$bus.$emit('showPatientMain')
-                }, 2000);
-            }else if(this.type == 'doctor'){
-                setTimeout(() => {
-                    this.isLoading = ''
-                    this.$bus.$emit('showDoctorMain')
-                }, 2000);
+                //发送登录请求，并开启loading动画
+                http({
+                    url: '/login',
+                    method: 'post',
+                    data: {
+                        username: this.userName,
+                        password: this.password
+                    }
+                }).then(res => {
+                        if (res.data.code == 200) {
+                            //登录成功，跳转到患者主页
+                            this.$bus.$emit('showPatientMain')
+                            this.isLoading = ''
+                            //将token存入localStorage
+                            localStorage.setItem('token', res.data.data.token)
+                        } else {
+                            //登录失败，提示错误信息
+                            this.$message.error(res.data.msg)
+                            this.isLoading = ''
+                        }
+                    }).catch(err => {
+                        console.log(err)
+                    })
+
+            } else if (this.type == 'doctor') {
+                //发送登录请求，并开启loading动画
+                http({
+                    url: '/login',
+                    method: 'post',
+                    data: {
+                        username: this.userName,
+                        password: this.password
+                    }
+                })
+                    .then(res => {
+                        if (res.data.code == 200) {
+                            //登录成功，跳转到医生主页
+                            this.$bus.$emit('showDoctorMain')
+                            this.isLoading = ''
+                            //将token存入localStorage
+                            localStorage.setItem('token', res.data.data.token)
+                        } else {
+                            //登录失败，提示错误信息
+                            this.$message.error(res.data.msg)
+                            this.isLoading = ''
+                        }
+                    }).catch(err => {
+                        console.log(err)
+                    })
             }
         }
     }
@@ -119,4 +163,5 @@ export default {
             float: right;
         }
     }
-}</style>
+}
+</style>

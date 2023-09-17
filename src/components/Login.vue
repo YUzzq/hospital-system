@@ -1,6 +1,6 @@
 <template>
   <div class="loginOutBox">
-    <h1>医院挂号系统</h1>
+    <h1 :style="registerStyle">在线挂号系统</h1>
     <div v-if="!type" class="chooseBtns">
       <a @click="type = 'patient'" class="patientIn">
         <div></div>
@@ -26,27 +26,44 @@ export default {
       //通过type来控制显示的组件
       type: '',
     };
-
+  },
+  computed:{
+    registerStyle(){
+      if(this.type == 'register'){
+        return {
+          marginTop: '10vh'
+        }
+      }
+    }
   },
   methods: {
+    //显示选择按钮
     showBtns() {
       this.type = ''
     },
+    //显示注册组件
     showRegister() {
       this.type = 'register'
     },
+    //显示登录组件
     showLogin() {
       this.type = 'patient'
     }
   },
   mounted() {
+    //监听事件
     this.$bus.$on('showBtns', this.showBtns)
     this.$bus.$on('showRegister', this.showRegister)
     this.$bus.$on('showLogin', this.showLogin)
+    //添加背景颜色
     document.body.classList.add('loginBody')
   },
   beforeDestroy() {
     document.body.classList.remove('loginBody')
+    //移除监听事件
+    this.$bus.$off('showBtns', this.showBtns)
+    this.$bus.$off('showRegister', this.showRegister)
+    this.$bus.$off('showLogin', this.showLogin)
   }
 }
 </script>
@@ -57,12 +74,13 @@ export default {
 }
 .loginOutBox {
   h1 {
+    font-weight: bold;
     width: 100%;
     color: #fff;
     text-align: center;
     font-size: 40px;
-    margin-top: 10vh;
-    margin-bottom: 10vh;
+    margin-top: 20vh;
+    margin-bottom: 5vh;
     height: 100px;
   }
 

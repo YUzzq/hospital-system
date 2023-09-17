@@ -1,7 +1,7 @@
 <template>
   <div class="outBox">
     <div class="showType"><i class="el-icon-first-aid-kit"></i> 医生平台</div>
-    <el-menu default-active="1" class="el-menu-vertical-demo" @open="handleOpen" @close="handleClose"
+    <el-menu default-active="3-3" class="el-menu-vertical-demo" @open="handleOpen" @close="handleClose"
       background-color="#fff">
       <el-menu-item @click="showDoctorInfo" index="1">
         <i class="el-icon-user-solid"></i>
@@ -17,15 +17,11 @@
           <span slot="title">排班信息</span>
         </template>
         <el-menu-item-group>
-          <el-menu-item @click="showWorkingInfo" index="2-1">排班信息管理</el-menu-item>
-          <el-menu-item @click="showWorkingTem" index="2-2">排班模板管理</el-menu-item>
-          <el-menu-item @click="showWorkingRegister" index="2-3">挂号管理</el-menu-item>
+          <el-menu-item @click="showWorkingInfo" index="3-1">排班信息管理</el-menu-item>
+          <el-menu-item @click="showWorkingTem" index="3-2">排班模板管理</el-menu-item>
+          <el-menu-item @click="showWorkingRegister" index="3-3">挂号管理</el-menu-item>
         </el-menu-item-group>
       </el-submenu>
-      <el-menu-item @click="showCheckPatientInfo" index="4">
-        <i class="el-icon-user"></i>
-        <span slot="title">患者信息</span>
-      </el-menu-item>
     </el-menu>
   </div>
 </template>
@@ -69,12 +65,8 @@ export default {
 <style scoped lang="less">
 .outBox {
   width: 250px;
-  height: 100%;
+  height: 100vh;
   background-color: #fff;
-  position: fixed;
-  left: 0;
-  top: 0;
-  z-index: 999;
   box-shadow: inset -1px -1px 0 #e6e6e6;
 
   .showType {

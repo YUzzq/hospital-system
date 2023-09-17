@@ -3,9 +3,9 @@
     <div v-if="isAdding" class="addRegisterMasking">
       <div class="addRegister">
         <div class="addRegisterTitle">添加挂号类别</div>
-        <el-input v-model="newRegister.name" placeholder="挂号名称"></el-input>
-        <el-input v-model="newRegister.time" placeholder="预计诊断时间"></el-input>
-        <el-input v-model="newRegister.cost" placeholder="挂号费用"></el-input>
+        <el-input v-model="newRegister.registrationName" placeholder="挂号名称"></el-input>
+        <el-input v-model="newRegister.estimatedTime" placeholder="预计诊断时间"></el-input>
+        <el-input v-model="newRegister.count" placeholder="挂号费用"></el-input>
         <div class="btns">
           <el-button type="danger" @click="cancelAddRegister">取消</el-button>
           <el-button type="primary" @click="confirmAddRegister">确认添加</el-button>
@@ -22,7 +22,7 @@
           <span v-if="!isDeling">批量删除</span>
           <span v-if="isDeling">确认删除</span>
         </el-button>
-        <el-button @click="addRegisterType" type="primary" round><i
+        <el-button @click="isAdding = true" type="primary" round><i
             class="el-icon-circle-plus-outline"></i>添加类别</el-button>
       </div>
     </div>
@@ -38,24 +38,24 @@
           </tr>
         </thead>
         <tbody>
-          <tr v-for="(item, index) in registerTypes" :key="index">
+          <tr v-for="item in registerTypes" :key="item.id">
             <td v-if="isDeling"><el-checkbox :label="item.id" v-model="delIds"><span></span></el-checkbox></td>
             <td>
-              <span class="registerName">{{ item.name }}</span>
-              <input v-if="item.isEdit" placeholder="请输入类型名" v-model="item.name" type="text"
+              <span class="registerName">{{ item.registrationName }}</span>
+              <input v-if="item.isEdit" placeholder="请输入类型名" v-model="item.registrationName" type="text"
                 class="editInput">
             </td>
             <td>
-              <span class="registerTime">{{item.time}}分钟</span>
-              <input v-if="item.isEdit" placeholder="请输入时长（分钟）" v-model.number="item.time"
-                type="text" class="editInput"></td>
-            <td>
-              <span class="registerCost">{{item.cost}}元</span>
-              <input v-if="item.isEdit" placeholder="请输入费用（元）" v-model="item.cost"
-                type="text" class="editInput">
+              <span class="registerTime">{{ item.estimatedTime }}分钟</span>
+              <input v-if="item.isEdit" placeholder="请输入时长（分钟）" v-model.number="item.estimatedTime" type="text"
+                class="editInput">
             </td>
             <td>
-              <el-link v-if="!item.isEdit" @click="item.isEdit = true" type="primary">编辑&nbsp;</el-link>
+              <span class="registerCost">{{ item.count }}元</span>
+              <input v-if="item.isEdit" placeholder="请输入费用（元）" v-model="item.count" type="text" class="editInput">
+            </td>
+            <td>
+              <el-link v-if="!item.isEdit" @click="EditregisterType(item)" type="primary">编辑&nbsp;</el-link>
               <el-link v-if="item.isEdit" @click="confirmEdit(item)" type="primary">完成&nbsp;</el-link>
               <el-link @click='delItem(item)' type="danger">删除</el-link>
             </td>
@@ -67,33 +67,16 @@
 </template>
 
 <script>
+import http from '@/utils/request'
 export default {
   data() {
     return {
       registerTypes: [
-        {
-          id: 1,
-          name: '普通号',
-          time: 10,
-          cost: 10
-        },
-        {
-          id: 2,
-          name: '专家号',
-          time: 20,
-          cost: 20
-        },
-        {
-          id: 3,
-          name: '特需号',
-          time: 30,
-          cost: 30
-        }
       ],
       newRegister: {
-        name: '',
-        time: '',
-        cost: ''
+        registrationName: '',
+        estimatedTime: '',
+        count: ''
       },
       delIds: [],
       isDeling: false,
@@ -109,12 +92,41 @@ export default {
         this.isCheckAll = false
       }
     },
+    //为新增加的挂号类别设置是否在编辑状态
+    registerTypes(val) {
+      if (val.length === 0) return
+      this.$set(val[val.length - 1], 'isEdit', false)
+    }
   },
   methods: {
+    //删除单个挂号类型
     delItem(item) {
-      if (!confirm(`确定删除${item.name}吗？`)) return
-      this.registerTypes = this.registerTypes.filter(i => i.id !== item.id)
+      if (!confirm(`确定删除${item.registrationName}吗？`)) return
+      //真正的删除
+      http({
+        url: '/doctor/registration/delete',
+        method: 'post',
+        data:[item.id]
+      })
+        .then(res => {
+          if (res.data.code == 200) {
+            //虚假的删除
+            this.registerTypes = this.registerTypes.filter(i => i.id !== item.id)
+            this.$message({
+              message: '删除成功',
+              type: 'success'
+            })
+          } else {
+            this.$message({
+              message: res.data.msg,
+              type: 'error'
+            })
+          }
+        }).catch(err => {
+          console.log(err)
+        })
     },
+    //批量删除挂号类型
     delInBatches() {
       if (!this.isDeling) {
         this.isDeling = true
@@ -124,9 +136,34 @@ export default {
         return
       }
       if (!confirm(`确定删除这${this.delIds.length}项吗？`)) return
+      //虚假的删除
       this.registerTypes = this.registerTypes.filter(i => !this.delIds.includes(i.id))
+      //真正的删除
+     http({
+        url: '/doctor/registration/delete',
+        method: 'post',
+        data: this.delIds
+      })
+      .then(res => {
+        if (res.data.code == 200) {
+          this.$message({
+            message: '删除成功',
+            type: 'success'
+          })
+        } else {
+          this.$message({
+            message: res.data.msg,
+            type: 'error'
+          })
+        }
+      })
+        .catch(err => {
+          console.log(err.data.msg);
+        })
       this.isDeling = false
+      this.delIds = []
     },
+    //选择全部
     checkAll() {
       if (this.isCheckAll) {
         this.delIds = this.registerTypes.map(i => i.id)
@@ -134,13 +171,10 @@ export default {
         this.delIds = []
       }
     },
-    addRegisterType() {
-      this.isAdding = true
-    },
     //取消添加挂号类型
     cancelAddRegister() {
-      if(this.newRegister.name !== '' || this.newRegister.time !== '' || this.newRegister.cost !== '') {
-        if(!confirm('确定取消添加吗？')) return
+      if (this.newRegister.name !== '' || this.newRegister.time !== '' || this.newRegister.cost !== '') {
+        if (!confirm('确定取消添加吗？')) return
       }
       this.newRegister = {
         name: '',
@@ -158,44 +192,114 @@ export default {
         })
         return
       }
+      //页面假装添加
       this.registerTypes.push({
         id: this.registerTypes.length + 1,
-        name: this.newRegister.name,
-        time: this.newRegister.time,
-        cost: this.newRegister.cost
+        registrationName: this.newRegister.registrationName,
+        estimatedTime: this.newRegister.estimatedTime,
+        count: this.newRegister.count
+      })
+      //真实的发送添加挂号类型请求
+      http({
+        url: '/doctor/registration/add',
+        method: 'post',
+        data: this.newRegister
+      })
+      .then(res => {
+        if (res.data.code == 200) {
+          this.$message({
+            message: '添加成功',
+            type: 'success'
+          })
+        } else {
+          this.$message({
+            message: res.data.msg,
+            type: 'error'
+          })
+        }
+      }).catch(err => {
+        console.log(err)
       })
       this.newRegister = {
-        name: '',
-        time: '',
-        cost: ''
+        registrationName: '',
+        estimatedTime: '',
+        count: ''
       }
       this.isAdding = false
     },
+    //编辑挂号类型
+    EditregisterType(item) {
+      item.isEdit = true
+      //将其他的挂号类型设置为不可编辑
+      this.registerTypes.forEach(i => {
+        if (i.isEdit==true&&i.id !== item.id) {
+          i.isEdit = this.confirmEdit(i)
+          item.isEdit = !i.isEdit
+        }
+      })
+    },
     //确认编辑
     confirmEdit(item) {
-      if (item.name === '' || item.time === '' || item.cost === '') {
+      if (item.registrationName === '' || item.estimatedTime === '' || item.count === '') {
         this.$message({
           message: '请填写完整信息',
           type: 'warning'
         })
-        return
+        return true
       }
+      //发送编辑请求
+      http({
+        url: '/doctor/registration/update',
+        method: 'post',
+        data: item
+      })
+      .then(res => {
+          if (res.data.code == 200) {
+            this.$message({
+              message: '修改成功',
+              type: 'success'
+            })
+          } else {
+            this.$message({
+              message: res.data.msg,
+              type: 'error'
+            })
+          }
+        }).catch(err => {
+          console.log(err)
+        })
       item.isEdit = false
+      return false
     }
   },
   created() {
-    this.registerTypes.forEach(item => {
-      this.$set(item, 'isEdit', false)
-    })
   },
+  mounted() {
+    //请求医生的挂号类别
+   http({
+        url: '/doctor/registration/query',
+        method: 'get'
+      })
+      .then(res => {
+        console.log(res);
+        this.registerTypes = Object.assign([], res.data.data)
+        this.registerTypes.forEach(item => {
+          this.$set(item, 'isEdit', false)
+        })
+      })
+      .catch(err => {
+        console.log(err);
+      })
+  }
 
 }
 </script>
 
 <style scoped lang="less">
 .outBox {
+  height: 100%;
   width: 100%;
-  height: 85%;
+  overflow: hidden;
 
   .headerBox {
     .title {
@@ -212,7 +316,7 @@ export default {
 
     padding: 1% 2%;
     width: 96%;
-    height: 10%;
+    height: 54px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -222,14 +326,14 @@ export default {
   }
 
   .tableBox {
+    height: 84%;
     width: 100%;
-    height: 30%;
     padding: 1% 0;
     border-radius: 10px;
+    overflow: auto;
 
     .tableGrp {
       width: 100%;
-      height: 100%;
       border-collapse: collapse;
 
       thead {
@@ -258,13 +362,15 @@ export default {
       tbody {
         tr {
           background-color: #fff;
+          border-bottom: 3px solid #F7F8FD;
 
           td {
             position: relative;
             padding: 10px 0;
             height: 30px;
             text-align: center;
-            border-bottom: 3px solid #F7F8FD;
+            vertical-align: middle;
+            line-height: 30px;
             color: #777;
 
             span {
@@ -277,9 +383,9 @@ export default {
 
             .editInput {
               position: absolute;
-              top: 7.5px;
+              top: 50%;
               left: 50%;
-              transform: translateX(-50%);
+              transform: translate(-50%, -50%);
               border: none;
               border-bottom: 1px solid #409EFF;
               outline: none;
@@ -293,34 +399,36 @@ export default {
       }
     }
   }
+
   .addRegisterMasking {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background-color: rgba(0, 0, 0, 0.5);
-      z-index: 999;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    z-index: 999;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    .addRegister {
+      width: 400px;
+      height: 340px;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 10px;
       display: flex;
-      justify-content: center;
-      align-items: center;
+      flex-wrap: wrap;
+      font-size: 20px;
 
-      .addRegister {
-        width: 400px;
-        height: 340px;
-        padding: 20px;
-        background-color: #fff;
-        border-radius: 10px;
+      .btns {
+        width: 100%;
         display: flex;
-        flex-wrap: wrap;
-        font-size: 20px;
-
-        .btns {
-          width: 100%;
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-        }
+        justify-content: space-between;
+        align-items: center;
       }
     }
-}</style>
+  }
+}
+</style>

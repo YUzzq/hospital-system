@@ -35,7 +35,6 @@ import http from '@/utils/request'
 export default {
   data() {
     return {
-      //通过page来控制显示的组件
       mail: '',
       authCode: '',
       isRightMail: '',
@@ -272,14 +271,6 @@ export default {
       &:nth-child(5) {
         width: 140px;
       }
-
-      // &:nth-child(n):before {
-      //   position: absolute;
-      //   font-size: 16px;
-      //   left: -10px;
-      //   content: '*';
-      //   color: #f00;
-      // }
     }
 
   }

@@ -55,20 +55,20 @@ export default {
                         password: this.password
                     }
                 }).then(res => {
-                        if (res.data.code == 200) {
-                            //登录成功，跳转到患者主页
-                            this.$bus.$emit('showPatientMain')
-                            this.isLoading = ''
-                            //将token存入localStorage
-                            localStorage.setItem('token', res.data.data.token)
-                        } else {
-                            //登录失败，提示错误信息
-                            this.$message.error(res.data.msg)
-                            this.isLoading = ''
-                        }
-                    }).catch(err => {
-                        console.log(err)
-                    })
+                    if (res.data.code == 200) {
+                        //登录成功，跳转到患者主页
+                        this.$bus.$emit('showPatientMain')
+                        this.isLoading = ''
+                        //将token存入localStorage
+                        localStorage.setItem('token', res.data.data.token)
+                    } else {
+                        //登录失败，提示错误信息
+                        this.$message.error(res.data.msg)
+                        this.isLoading = ''
+                    }
+                }).catch(err => {
+                    console.log(err)
+                })
 
             } else if (this.type == 'doctor') {
                 //发送登录请求，并开启loading动画
